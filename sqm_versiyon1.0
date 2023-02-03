@@ -1,0 +1,53 @@
+import json
+from time import *
+import serial
+
+txt_isim = 'sqmVeri'
+
+ser = serial.Serial(
+    port='COM5', \
+    baudrate=115200, \
+    parity=serial.PARITY_NONE, \
+    stopbits=serial.STOPBITS_ONE, \
+    bytesize=serial.EIGHTBITS, \
+    timeout=1)
+
+print("sqm bağlandı: " + ser.portstr)
+sleep(1)
+try:
+    with open("{}.txt".format(txt_isim), "a", encoding='utf-8') as file:
+        while True:
+            kadirler = []
+            sicakliklar = []
+            for i in range(10):
+                ser.write(str.encode("rx\n"))
+                ser.flush()
+                sqmveri = str(ser.readline())
+                kadir = float(sqmveri[5:10])  # kadir/açısaniye^2
+                sicaklik = float(sqmveri[50:57].replace('C',''))
+                kadirler.append(kadir)
+                sicakliklar.append(sicaklik)
+                sleep(0.2)
+            kadir = sum(kadirler) / len(kadirler)
+            sicaklik = sum(sicakliklar) / len(sicakliklar)
+
+            tik = time()
+            zaman = localtime(tik)
+            gun = zaman[2]
+            ay = zaman[1]
+            yil = zaman[0]
+            saat = zaman[3]
+            dakika = zaman[4]
+            saniye = zaman[5]
+
+            sqm_zaman = f"{gun:02d}/{ay:02d}/{yil} {saat:02d}:{dakika:02d}:{saniye:02d}"
+
+            txt_sqm = f"{sqm_zaman} - {kadir:.2f} kadir/açısaniye^2, {sicaklik:.2f} C"
+            print(txt_sqm)
+
+            file.write(txt_sqm + "\n")
+            sleep(1)
+
+except Exception as e:
+    ser.close()
+    print(e)
